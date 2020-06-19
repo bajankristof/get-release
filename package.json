@@ -2,9 +2,10 @@
   "name": "get-release",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "ncc build src/index.js"
+    "build": "ncc build src/main.js",
+    "precommit": "npm run build"
   },
   "keywords": [],
   "author": "",
