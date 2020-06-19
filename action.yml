@@ -1,0 +1,25 @@
+name: Get GitHub release
+description: Get GitHub release information such as upload URL among others...
+inputs:
+  tag:
+    description: The GitHub release tag
+    required: true
+    default: "@latest"
+outputs:
+  release_id:
+    description: The ID of the release
+  release_name:
+    description: The name of the release
+  html_url:
+    description: The HTML URL of the release that users can visit using a web browser
+  upload_url:
+    description: The URL that can be used to upload assets to the release, for example using the @actions/upload-release-asset GitHub action
+  assets_url:
+    description: The URL to retrieve the assets that were uploaded to the release
+  tarball_url:
+    description: The URL from where one can download the tar archive of the source
+  zipball_url:
+    description: The URL from where one can download the zip archive of the source
+runs:
+  using: node12
+  main: dist/index.js
