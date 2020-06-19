@@ -6807,17 +6807,17 @@ const
     outputReleaseInfo = async (octokit, tag) => {
         const { ref } = github.context
 
-        console.log(`Input release tag: ${tag}`)
+        core.debug(`Input release tag: ${tag}`)
         tag = '@context' === tag ? ref.replace('refs/tags/', '') : tag
-        console.log(`Generated release tag: ${tag}`)
+        core.debug(`Generated release tag: ${tag}`)
 
-        console.log('Getting release information from GitHub')
+        core.debug('Getting release information from GitHub')
         const release = '@latest' === tag
             ? await getLatestRelease(octokit)
             : await getReleaseByTag(octokit, tag)
 
-        console.log('=== RELEASE INFORMATION ===')
-        console.log(JSON.stringify(release, null, 4))
+        core.debug('=== RELEASE INFORMATION ===')
+        core.debug(JSON.stringify(release, null, 4))
 
         core.setOutput('release_id', release.id)
         core.setOutput('release_name', release.name)
@@ -6827,7 +6827,7 @@ const
         core.setOutput('assets_url', release.assets_url)
         core.setOutput('tarball_url', release.tarball_url)
         core.setOutput('zipball_url', release.zipball_url)
-        
+
         core.setOutput('tag_name', release.tag_name)
     }
 
