@@ -14,8 +14,10 @@ const
         return data;
     };
 
-module.exports = async (octokit, tag) => {
+module.exports = async () => {
     try {
+        var tag = core.getInput('tag');
+        const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
         const { ref } = github.context;
 
         core.debug(`Input release tag: ${tag}`);
