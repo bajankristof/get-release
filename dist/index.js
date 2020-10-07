@@ -40,7 +40,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(31);
+/******/ 		return __webpack_require__(104);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -307,10 +307,55 @@ module.exports._enoent = enoent;
 /***/ }),
 
 /***/ 31:
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
-const run = __webpack_require__(940);
-if (require.main === require.cache[eval('__filename')]) run();
+const core = __webpack_require__(470);
+const github = __webpack_require__(469);
+
+async function getLatestRelease(octokit) {
+    const { owner, repo } = github.context.repo;
+    const { data } = await octokit.repos.getLatestRelease({ owner, repo });
+    return data;
+};
+
+async function getReleaseByTag(octokit, tag) {
+    const { owner, repo } = github.context.repo;
+    const { data } = await octokit.repos.getReleaseByTag({ owner, repo, tag });
+    return data;
+};
+
+module.exports.run = async () => {
+    try {
+        var tag = core.getInput('tag');
+        const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+        const { ref } = github.context;
+
+        core.debug(`Input release tag: ${tag}`);
+        tag = '@context' === tag ? ref.replace('refs/tags/', '') : tag;
+        core.debug(`Generated release tag: ${tag}`);
+
+        core.debug('Getting release information from GitHub')
+        const release = '@latest' === tag
+            ? await getLatestRelease(octokit)
+            : await getReleaseByTag(octokit, tag);
+
+        core.debug('=== RELEASE INFORMATION ===');
+        core.debug(JSON.stringify(release, null, 4));
+
+        core.setOutput('release_id', release.id);
+        core.setOutput('release_name', release.name);
+
+        core.setOutput('html_url', release.html_url);
+        core.setOutput('upload_url', release.upload_url);
+        core.setOutput('assets_url', release.assets_url);
+        core.setOutput('tarball_url', release.tarball_url);
+        core.setOutput('zipball_url', release.zipball_url);
+
+        core.setOutput('tag_name', release.tag_name);
+    } catch (error) {
+        core.setFailed(error.message);
+    }
+};
 
 
 /***/ }),
@@ -396,10 +441,81 @@ module.exports = windowsRelease;
 
 /***/ }),
 
+/***/ 82:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Sanitizes an input into a string so it can be passed into issueCommand safely
+ * @param input input to sanitize into a string
+ */
+function toCommandValue(input) {
+    if (input === null || input === undefined) {
+        return '';
+    }
+    else if (typeof input === 'string' || input instanceof String) {
+        return input;
+    }
+    return JSON.stringify(input);
+}
+exports.toCommandValue = toCommandValue;
+//# sourceMappingURL=utils.js.map
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
 module.exports = require("os");
+
+/***/ }),
+
+/***/ 102:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// For internal use, subject to change.
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const fs = __importStar(__webpack_require__(747));
+const os = __importStar(__webpack_require__(87));
+const utils_1 = __webpack_require__(82);
+function issueCommand(command, message) {
+    const filePath = process.env[`GITHUB_${command}`];
+    if (!filePath) {
+        throw new Error(`Unable to find environment variable for file command ${command}`);
+    }
+    if (!fs.existsSync(filePath)) {
+        throw new Error(`Missing file at path: ${filePath}`);
+    }
+    fs.appendFileSync(filePath, `${utils_1.toCommandValue(message)}${os.EOL}`, {
+        encoding: 'utf8'
+    });
+}
+exports.issueCommand = issueCommand;
+//# sourceMappingURL=file-command.js.map
+
+/***/ }),
+
+/***/ 104:
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+const { run } = __webpack_require__(31);
+if (require.main === require.cache[eval('__filename')]) run();
+
 
 /***/ }),
 
@@ -3353,6 +3469,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const os = __importStar(__webpack_require__(87));
+const utils_1 = __webpack_require__(82);
 /**
  * Commands
  *
@@ -3406,28 +3523,14 @@ class Command {
         return cmdStr;
     }
 }
-/**
- * Sanitizes an input into a string so it can be passed into issueCommand safely
- * @param input input to sanitize into a string
- */
-function toCommandValue(input) {
-    if (input === null || input === undefined) {
-        return '';
-    }
-    else if (typeof input === 'string' || input instanceof String) {
-        return input;
-    }
-    return JSON.stringify(input);
-}
-exports.toCommandValue = toCommandValue;
 function escapeData(s) {
-    return toCommandValue(s)
+    return utils_1.toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A');
 }
 function escapeProperty(s) {
-    return toCommandValue(s)
+    return utils_1.toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A')
@@ -5549,6 +5652,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const command_1 = __webpack_require__(431);
+const file_command_1 = __webpack_require__(102);
+const utils_1 = __webpack_require__(82);
 const os = __importStar(__webpack_require__(87));
 const path = __importStar(__webpack_require__(622));
 /**
@@ -5575,9 +5680,17 @@ var ExitCode;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function exportVariable(name, val) {
-    const convertedVal = command_1.toCommandValue(val);
+    const convertedVal = utils_1.toCommandValue(val);
     process.env[name] = convertedVal;
-    command_1.issueCommand('set-env', { name }, convertedVal);
+    const filePath = process.env['GITHUB_ENV'] || '';
+    if (filePath) {
+        const delimiter = '_GitHubActionsFileCommandDelimeter_';
+        const commandValue = `${name}<<${delimiter}${os.EOL}${convertedVal}${os.EOL}${delimiter}`;
+        file_command_1.issueCommand('ENV', commandValue);
+    }
+    else {
+        command_1.issueCommand('set-env', { name }, convertedVal);
+    }
 }
 exports.exportVariable = exportVariable;
 /**
@@ -5593,7 +5706,13 @@ exports.setSecret = setSecret;
  * @param inputPath
  */
 function addPath(inputPath) {
-    command_1.issueCommand('add-path', {}, inputPath);
+    const filePath = process.env['GITHUB_PATH'] || '';
+    if (filePath) {
+        file_command_1.issueCommand('PATH', inputPath);
+    }
+    else {
+        command_1.issueCommand('add-path', {}, inputPath);
+    }
     process.env['PATH'] = `${inputPath}${path.delimiter}${process.env['PATH']}`;
 }
 exports.addPath = addPath;
@@ -9434,61 +9553,6 @@ function withCustomRequest(customRequest) {
 exports.graphql = graphql$1;
 exports.withCustomRequest = withCustomRequest;
 //# sourceMappingURL=index.js.map
-
-
-/***/ }),
-
-/***/ 940:
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-const
-    core = __webpack_require__(470),
-    github = __webpack_require__(469);
-
-const
-    getLatestRelease = async (octokit) => {
-        const { owner, repo } = github.context.repo;
-        const { data } = await octokit.repos.getLatestRelease({ owner, repo });
-        return data;
-    },
-    getReleaseByTag = async (octokit, tag) => {
-        const { owner, repo } = github.context.repo;
-        const { data } = await octokit.repos.getReleaseByTag({ owner, repo, tag });
-        return data;
-    };
-
-module.exports = async () => {
-    try {
-        var tag = core.getInput('tag');
-        const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
-        const { ref } = github.context;
-
-        core.debug(`Input release tag: ${tag}`);
-        tag = '@context' === tag ? ref.replace('refs/tags/', '') : tag;
-        core.debug(`Generated release tag: ${tag}`);
-
-        core.debug('Getting release information from GitHub')
-        const release = '@latest' === tag
-            ? await getLatestRelease(octokit)
-            : await getReleaseByTag(octokit, tag);
-
-        core.debug('=== RELEASE INFORMATION ===');
-        core.debug(JSON.stringify(release, null, 4));
-
-        core.setOutput('release_id', release.id);
-        core.setOutput('release_name', release.name);
-
-        core.setOutput('html_url', release.html_url);
-        core.setOutput('upload_url', release.upload_url);
-        core.setOutput('assets_url', release.assets_url);
-        core.setOutput('tarball_url', release.tarball_url);
-        core.setOutput('zipball_url', release.zipball_url);
-
-        core.setOutput('tag_name', release.tag_name);
-    } catch (error) {
-        core.setFailed(error.message);
-    }
-};
 
 
 /***/ }),
